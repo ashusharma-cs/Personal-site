@@ -98,7 +98,7 @@ const Hero = () => {
 
     useEffect(() => {
         // Tracker for width to detect horizontal resizes only on mobile
-        let lastWidth = window.innerWidth;
+        let lastWidth = 0; // Initialize to 0 to force first update
 
         const updateDimensions = () => {
             if (containerRef.current) {
