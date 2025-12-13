@@ -134,11 +134,8 @@ const Hero = () => {
 
             const cx = rect.width / 2;
             const cy = rect.height / 2;
-            const dx = x - cx;
-            const dy = y - cy;
-            const isNearCenter = Math.sqrt(dx * dx + dy * dy) < 400;
-
-            mouseRef.current = { x, y, isActive: isNearCenter };
+            // Removed distance check - always active if mouse is moving in container
+            mouseRef.current = { x, y, isActive: true };
         };
 
         const handleMouseLeave = () => {
@@ -186,22 +183,35 @@ const Hero = () => {
         const particleCount = 1500; // Reduced to sweet spot
         const particles = [];
 
-        const cx = internalWidth / 2;
-        const cy = internalHeight / 2;
+        // Center is now just the "Initial" center, actual center drifts
+        const initialCx = internalWidth / 2;
+        const initialCy = internalHeight / 2;
 
         const isMobile = dimensions.width < 768;
-        const ringRadius = toInternal(isMobile ? 150 : 300);
+        // Reduced size as requested
+        const ringRadius = toInternal(isMobile ? 110 : 220);
         const exclusionRadius = ringRadius - 20;
+
+        // BLACK HOLE STATE (Internal Physics)
+        // We use a ref so it persists across renders without triggering re-renders
+        const blackHolePos = { x: initialCx, y: initialCy };
 
         for (let i = 0; i < particleCount; i++) {
             const isRing = Math.random() < 0.40;
 
             let ringTarget = null;
+            let relativeAngle = 0;
+            let relativeDist = 0;
+
             if (isRing) {
                 const angle = Math.random() * Math.PI * 2;
+                relativeAngle = angle; // Store relative polar coords
+                relativeDist = ringRadius;
+
+                // Initial placement relative to center
                 ringTarget = {
-                    x: cx + Math.cos(angle) * ringRadius,
-                    y: cy + Math.sin(angle) * ringRadius
+                    x: initialCx + Math.cos(angle) * ringRadius,
+                    y: initialCy + Math.sin(angle) * ringRadius
                 };
             }
 
@@ -213,15 +223,7 @@ const Hero = () => {
             } else {
                 startX = Math.random() * internalWidth;
                 startY = Math.random() * internalHeight;
-                const dx = startX - cx;
-                const dy = startY - cy;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < exclusionRadius) {
-                    const angle = Math.atan2(dy, dx);
-                    const push = ringRadius + Math.random() * 200;
-                    startX = cx + Math.cos(angle) * push;
-                    startY = cy + Math.sin(angle) * push;
-                }
+                // No exclusion check needed for initial scatter really, gravity fixes it
             }
 
             particles.push({
@@ -229,7 +231,9 @@ const Hero = () => {
                 y: startY,
                 vx: (Math.random() - 0.5) * 1.5,
                 vy: (Math.random() - 0.5) * 1.5,
-                ringTarget: ringTarget,
+                ringTarget: ringTarget, // Stores reference if it has one
+                relativeAngle: relativeAngle, // For rebuilding target dynamically
+                relativeDist: relativeDist,
                 size: Math.random() * 1.5 + 0.5,
                 isRing: !!ringTarget,
                 // Assign a "type" for batch rendering
@@ -237,18 +241,44 @@ const Hero = () => {
             });
         }
 
+        let time = 0;
+
         const animate = () => {
+            time += 0.01;
             ctx.clearRect(0, 0, internalWidth, internalHeight);
 
             const isActive = mouseRef.current.isActive;
             const mouseX = mouseRef.current.x * scale;
             const mouseY = mouseRef.current.y * scale;
 
+            // --- UPDATE BLACK HOLE POSITION ---
+            let targetBhX, targetBhY;
+
+            if (isActive) {
+                targetBhX = mouseX;
+                targetBhY = mouseY;
+            } else {
+                const floatAmp = isMobile ? 20 : 50;
+                targetBhX = initialCx + Math.cos(time * 0.5) * floatAmp;
+                targetBhY = initialCy + Math.sin(time * 1.0) * (floatAmp * 0.5);
+            }
+
+            const lerpFactor = 0.05;
+            blackHolePos.x += (targetBhX - blackHolePos.x) * lerpFactor;
+            blackHolePos.y += (targetBhY - blackHolePos.y) * lerpFactor;
+
+            const bhX = blackHolePos.x;
+            const bhY = blackHolePos.y;
+
             // THEME STRINGS
             const isDark = document.documentElement.classList.contains('dark');
             const colorBg = isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.6)";
             const colorRingIdle = isDark ? "rgba(255, 255, 255, 0.6)" : "rgba(0, 0, 0, 0.9)";
             const colorActive = "#A855F7"; // Purple
+
+            // LENSING
+            const lensRadius = ringRadius;
+            const lensStrength = 60;
 
             // BATCH CONTAINERS
             const batchBg = [];
@@ -266,54 +296,68 @@ const Hero = () => {
 
                 let currentType = 0; // Default BG
 
-                if (p.isRing && p.ringTarget) {
-                    const dx = p.ringTarget.x - p.x;
-                    const dy = p.ringTarget.y - p.y;
-                    p.vx += dx * 0.01;
-                    p.vy += dy * 0.01;
+                if (p.isRing) {
+                    const targetX = bhX + Math.cos(p.relativeAngle) * p.relativeDist;
+                    const targetY = bhY + Math.sin(p.relativeAngle) * p.relativeDist;
+
+                    const dx = targetX - p.x;
+                    const dy = targetY - p.y;
+
+                    p.vx += dx * 0.05;
+                    p.vy += dy * 0.05;
+                    p.vx *= 0.80;
+                    p.vy *= 0.80;
 
                     currentType = isActive ? 2 : 1;
-                }
-
-                if (!p.isRing) {
-                    const dx = p.x - cx;
-                    const dy = p.y - cy;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-
-                    if (dist < exclusionRadius) {
-                        const force = (exclusionRadius - dist) / exclusionRadius;
-                        const angle = Math.atan2(dy, dx);
-                        p.vx += Math.cos(angle) * force * 1.0;
-                        p.vy += Math.sin(angle) * force * 1.0;
-                    }
                 }
 
                 p.x += p.vx;
                 p.y += p.vy;
 
-                if (p.x < 0) p.x = internalWidth;
-                if (p.x > internalWidth) p.x = 0;
-                if (p.y < 0) p.y = internalHeight;
-                if (p.y > internalHeight) p.y = 0;
+                // Screen Wrap - ONLY for background stars
+                // Ring particles are tethered to the black hole and should leave the screen if the hole does
+                if (!p.isRing) {
+                    if (p.x < 0) p.x = internalWidth;
+                    if (p.x > internalWidth) p.x = 0;
+                    if (p.y < 0) p.y = internalHeight;
+                    if (p.y > internalHeight) p.y = 0;
+                }
 
-                // Push to appropriate batch
                 if (currentType === 0) batchBg.push(p);
                 else if (currentType === 1) batchRingIdle.push(p);
                 else batchRingActive.push(p);
             }
 
-            // RENDER BATCHES (DRAW CALLS: 3)
-
-            // 1. Background Particles
+            // 1. Background Particles with Dynamic Lensing
             ctx.fillStyle = colorBg;
             ctx.beginPath();
             for (let i = 0; i < batchBg.length; i++) {
                 const p = batchBg[i];
-                ctx.rect(p.x, p.y, p.size, p.size);
+
+                const dx = p.x - bhX;
+                const dy = p.y - bhY;
+                const distSq = dx * dx + dy * dy;
+                const dist = Math.sqrt(distSq);
+
+                // SINGULARITY CHECK:
+                // If a star is too close to the dead center, light cannot escape (or math blows up).
+                // We simply don't render it. This fixes the "dots in the middle" artifact.
+                if (dist < 20) continue;
+
+                let lx = p.x;
+                let ly = p.y;
+
+                // Apply lensing to everything else
+                const force = (lensRadius * lensStrength) / dist;
+                const shiftFactor = 1 + (force / dist);
+                lx = bhX + dx * shiftFactor;
+                ly = bhY + dy * shiftFactor;
+
+                ctx.rect(lx, ly, p.size, p.size);
             }
             ctx.fill();
 
-            // 2. Ring Idle Particles
+            // 2. Ring Idle Particles (No Lensing needed on the ring itself, it IS the source)
             if (batchRingIdle.length > 0) {
                 ctx.fillStyle = colorRingIdle;
                 ctx.beginPath();
@@ -342,8 +386,8 @@ const Hero = () => {
     }, [dimensions, isInView]);
 
     return (
-        <section className="relative w-full h-[100dvh] flex items-center justify-center overflow-hidden bg-white dark:bg-black transition-colors duration-300">
-            <div ref={containerRef} className="absolute inset-0 w-full h-full z-0">
+        <section ref={containerRef} className="relative w-full h-[100dvh] flex items-center justify-center overflow-hidden bg-white dark:bg-black transition-colors duration-300">
+            <div className="absolute inset-0 w-full h-full z-0">
                 <canvas ref={canvasRef} className="block" />
             </div>
 
