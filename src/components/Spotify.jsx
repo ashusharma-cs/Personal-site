@@ -79,54 +79,60 @@ const tracks = [
     }
 ];
 
-const TrackCard = ({ track, isActive, onClick }) => {
+const TrackCard = ({ track, index, isActive, onClick }) => {
     return (
         <div
             onClick={onClick}
-            className={`${track.color} rounded-xl p-4 shadow-md dark:shadow-lg relative overflow-hidden group transition-all duration-300 hover:scale-[1.02] cursor-pointer ring-offset-2 ring-offset-white dark:ring-offset-black ${isActive ? 'ring-2 ring-purple-500 scale-[1.02]' : 'border border-gray-100 dark:border-transparent'}`}
+            className={`
+                group flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all duration-300
+                ${isActive
+                    ? 'bg-gray-100 dark:bg-white/5 shadow-sm scale-[1.01]'
+                    : 'hover:bg-gray-50 dark:hover:bg-white/5 hover:translate-x-1'}
+            `}
         >
-            <div className="flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-4">
-                    {/* Album Art */}
-                    <div className="w-12 h-12 rounded-lg shadow-md overflow-hidden relative">
-                        <img src={track.cover} alt={track.title} className="w-full h-full object-cover" />
-                        <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                            {/* Larger Play Button */}
-                            <FiPlay className="fill-white" size={24} />
-                        </div>
-                    </div>
-
-                    {/* Info */}
-                    <div>
-                        <h4 className="font-bold text-sm leading-tight text-black dark:text-white">{track.title}</h4>
-                        <p className="text-gray-500 dark:text-gray-400 text-[10px] tracking-wide">{track.artist}</p>
-                    </div>
-                </div>
-
-                {/* Right Side: Duration or Active Visualizer (Removed small icons) */}
-                <div className="flex items-center gap-4">
+            <div className="flex items-center gap-5">
+                {/* Minimal Index / Play Icon */}
+                <div className="w-8 flex justify-center text-sm font-mono text-gray-400 dark:text-gray-500">
                     {isActive ? (
-                        <div className="flex gap-[3px] items-end h-4">
-                            <motion.div
-                                animate={{ height: [4, 16, 8, 14, 6] }}
-                                transition={{ repeat: Infinity, duration: 0.6 }}
-                                className="w-1 bg-green-400 rounded-full"
-                            />
-                            <motion.div
-                                animate={{ height: [10, 6, 16, 8, 12] }}
-                                transition={{ repeat: Infinity, duration: 0.5, delay: 0.1 }}
-                                className="w-1 bg-green-400 rounded-full"
-                            />
-                            <motion.div
-                                animate={{ height: [6, 12, 4, 14, 8] }}
-                                transition={{ repeat: Infinity, duration: 0.7, delay: 0.2 }}
-                                className="w-1 bg-green-400 rounded-full"
-                            />
-                        </div>
+                        <FiPlay className="fill-purple-500 text-purple-500 animate-pulse" />
                     ) : (
-                        <span className="text-xs font-mono text-gray-400 dark:text-gray-500">{track.duration}</span>
+                        <span className="group-hover:hidden">{String(index + 1).padStart(2, '0')}</span>
                     )}
+                    <FiPlay className={`fill-black dark:fill-white hidden ${!isActive && 'group-hover:block'}`} />
                 </div>
+
+                {/* Info */}
+                <div>
+                    <h4 className={`font-bold text-sm leading-tight transition-colors ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-black dark:text-white'}`}>
+                        {track.title}
+                    </h4>
+                    <p className="text-gray-500 dark:text-gray-400 text-[10px] tracking-wide mt-1 uppercase">{track.artist}</p>
+                </div>
+            </div>
+
+            {/* Right Side: Duration or Active Visualizer */}
+            <div className="flex items-center gap-4">
+                {isActive ? (
+                    <div className="flex gap-[3px] items-end h-3">
+                        <motion.div
+                            animate={{ height: [4, 12, 6, 12, 4] }}
+                            transition={{ repeat: Infinity, duration: 0.6 }}
+                            className="w-0.5 bg-purple-500 rounded-full"
+                        />
+                        <motion.div
+                            animate={{ height: [8, 4, 12, 6, 10] }}
+                            transition={{ repeat: Infinity, duration: 0.5, delay: 0.1 }}
+                            className="w-0.5 bg-purple-500 rounded-full"
+                        />
+                        <motion.div
+                            animate={{ height: [4, 10, 4, 10, 6] }}
+                            transition={{ repeat: Infinity, duration: 0.7, delay: 0.2 }}
+                            className="w-0.5 bg-purple-500 rounded-full"
+                        />
+                    </div>
+                ) : (
+                    <span className="text-xs font-mono text-gray-300 dark:text-gray-600 group-hover:text-black dark:group-hover:text-white transition-colors">{track.duration}</span>
+                )}
             </div>
         </div>
     );
@@ -147,30 +153,43 @@ const Spotify = () => {
 
                 {/* Left: Player / Visualizer Card */}
                 {/* Dynamically renders the Embed for the Active Track */}
-                <div className="w-full md:w-1/3 bg-black border border-lightBorder dark:border-transparent rounded-xl p-0 shadow-lg dark:shadow-xl flex flex-col relative overflow-hidden h-[450px]">
-                    {/* The Embed Player */}
-                    <AnimatePresence mode='wait'>
-                        <motion.div
-                            key={activeTrack.id}
-                            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                            transition={{ duration: 0.4, ease: "easeOut" }}
-                            className="h-full w-full"
-                        >
-                            <iframe
-                                src={activeTrack.embedUrl}
-                                width="100%"
-                                height="100%"
-                                frameBorder="0"
-                                allowFullScreen=""
-                                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                                loading="lazy"
-                                title="Spotify Player"
-                                className="bg-black"
-                            ></iframe>
-                        </motion.div>
-                    </AnimatePresence>
+                <div className="w-full md:w-1/3 bg-white dark:bg-black border border-lightBorder dark:border-transparent rounded-xl p-0 shadow-lg dark:shadow-xl grid grid-cols-1 relative overflow-hidden h-fit md:self-center">
+                    {/* The Embed Player - PERSISTENT STACK for instant switching */}
+                    {tracks.map((track) => {
+                        const isCurrent = activeTrack.id === track.id;
+                        return (
+                            <motion.div
+                                key={track.id}
+                                initial={false}
+                                animate={{
+                                    opacity: isCurrent ? 1 : 0,
+                                    scale: isCurrent ? 1 : 0.98,
+                                    zIndex: isCurrent ? 10 : 0,
+                                }}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 300,
+                                    damping: 30,
+                                    mass: 1
+                                }}
+                                style={{ pointerEvents: isCurrent ? "auto" : "none" }}
+                                className="w-full col-start-1 row-start-1"
+                            >
+                                <iframe
+                                    src={track.embedUrl}
+                                    width="100%"
+                                    height="100%"
+                                    style={{ minHeight: '352px' }}
+                                    frameBorder="0"
+                                    allowFullScreen=""
+                                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                    loading="lazy"
+                                    title={`Spotify Player - ${track.title}`}
+                                    className="bg-white dark:bg-black"
+                                ></iframe>
+                            </motion.div>
+                        );
+                    })}
                 </div>
 
                 {/* Right: Individual Song Cards List */}
@@ -179,9 +198,10 @@ const Spotify = () => {
                         <p className="font-mono text-black dark:text-purple-500 text-xs tracking-widest">SELECT A VIBE</p>
                     </div>
 
-                    {tracks.map(track => (
+                    {tracks.map((track, index) => (
                         <TrackCard
                             key={track.id}
+                            index={index}
                             track={track}
                             isActive={activeTrack.id === track.id}
                             onClick={() => setActiveTrack(track)}
