@@ -275,6 +275,10 @@ const Hero = () => {
             <div ref={containerRef} className="absolute inset-0 w-full h-full z-0">
                 <canvas ref={canvasRef} className="block" />
             </div>
+
+            {/* Gradient Fade Overlay */}
+            <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white dark:from-black to-transparent pointer-events-none z-1"></div>
+
             <div className="relative z-10 container mx-auto px-6 md:px-12 pointer-events-none">
                 <motion.div style={{ y: yText }} className="max-w-4xl pointer-events-auto">
                     <motion.p
@@ -332,9 +336,9 @@ const Hero = () => {
                                     <div className="flex items-center gap-2 text-xs font-mono">
                                         {/* Show Difficulty Only if we had specific data, otherwise default or hide */}
                                         <span className={`px-2 py-0.5 rounded ${leetcode.difficulty === 'Hard' ? 'bg-red-500/10 text-red-600 dark:text-red-400' :
-                                                leetcode.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' :
-                                                    leetcode.difficulty === 'Easy' ? 'bg-green-500/10 text-green-600 dark:text-green-400' :
-                                                        'bg-zinc-500/10 text-zinc-500' // Failover
+                                            leetcode.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' :
+                                                leetcode.difficulty === 'Easy' ? 'bg-green-500/10 text-green-600 dark:text-green-400' :
+                                                    'bg-zinc-500/10 text-zinc-500' // Failover
                                             }`}>
                                             {leetcode.difficulty}
                                         </span>

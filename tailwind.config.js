@@ -25,7 +25,7 @@ export default {
         lightBorder: '#e5e5e5', // Light border
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Outfit', 'sans-serif'],
         mono: ['Fira Code', 'monospace'],
       },
     },
