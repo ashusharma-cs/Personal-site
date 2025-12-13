@@ -123,61 +123,73 @@ const YouTube = () => {
     };
 
     return (
-        <section id="youtube" className="py-20 px-6 max-w-5xl mx-auto">
-            <h2 className="flex items-center text-2xl md:text-3xl font-bold text-black dark:text-lightestSlate mb-8">
-                <span className="text-black dark:text-green font-mono mr-4">03.</span>
-                Latest Video
-                <span className="h-px bg-lightBorder dark:bg-lightestNavy flex-grow ml-6"></span>
+        <section id="youtube" className="py-24 px-6 max-w-5xl mx-auto">
+            <h2 className="flex items-center text-3xl font-bold text-black dark:text-white mb-12 tracking-tight">
+                <span className="text-purple-600 font-mono mr-5">03.</span>
+                Latest Content
+                <span className="h-px bg-gray-200 dark:bg-white/10 flex-grow ml-8"></span>
             </h2>
 
-            <div className="bg-white dark:bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-200 dark:border-transparent transition-colors duration-300">
-                {/* Header Bar */}
-                <div className="bg-gray-50 dark:bg-[#0f0f0f] px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-transparent transition-colors duration-300">
-                    <div className="flex items-center gap-3">
-                        <a href="https://www.youtube.com/@voidtomain" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center text-white font-bold text-lg">V</div>
-                            <div>
-                                <h3 className="text-black dark:text-white font-bold text-sm tracking-wide leading-tight group-hover:underline">Void to Main</h3>
-                                <p className="text-gray-500 dark:text-gray-400 text-xs tracking-wider">@voidtomain</p>
+            {/* Cinematic Card Container */}
+            <div className="relative group rounded-3xl">
+                <div className="relative rounded-[22px] overflow-hidden bg-white dark:bg-[#050505]">
+
+                    {/* Video Player - Pure & Unobstructed */}
+                    <div className="relative aspect-video bg-black group-hover:brightness-110 transition-all duration-700">
+                        {video.link ? (
+                            <iframe
+                                className="absolute inset-0 w-full h-full"
+                                src={`https://www.youtube.com/embed/${video.link.split('v=')[1]}?autoplay=0&mute=0&controls=1&rel=0&modestbranding=1`}
+                                title={video.title}
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            ></iframe>
+                        ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-white/30 gap-4">
+                                <div className="w-12 h-12 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                <span className="text-sm font-mono tracking-widest">LOADING CONTENT...</span>
                             </div>
-                        </a>
+                        )}
+                        {/* Subtle inner shadow for depth */}
+                        <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]"></div>
                     </div>
 
-                    {/* Stats Display */}
-                    <div className="flex items-center gap-4 md:gap-6 text-xs text-gray-600 dark:text-gray-400 font-mono tracking-wide hidden sm:flex">
-                        {/* <div className="flex items-center gap-1.5">
-                            <span className="text-black dark:text-white font-bold">{stats.subscribers}</span> subscribers
+                    {/* Footer - Content & Branding Combined */}
+                    <div className="bg-white dark:bg-[#0A0A0A] px-6 py-5 border-t border-gray-100 dark:border-white/5 relative z-10 grid md:grid-cols-[1fr_auto] gap-6 items-center transition-colors duration-300">
+
+                        {/* Left: Video Info */}
+                        <div className="flex flex-col gap-2">
+                            <h3 className="text-gray-900 dark:text-white text-lg md:text-xl font-bold leading-tight tracking-tight group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors line-clamp-1">
+                                {video.title}
+                            </h3>
+                            <div className="flex items-center gap-3 text-xs font-mono text-gray-500 dark:text-gray-500 tracking-wider uppercase">
+                                <span className="flex items-center gap-1.5">
+                                    <FiYoutube className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
+                                    Latest Upload
+                                </span>
+                                <span className="text-gray-300 dark:text-white/20">•</span>
+                                <span>{video.date}</span>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-black dark:text-white font-bold">{stats.views}</span> views
-                        </div> */}
-                        <a href="https://www.youtube.com/@voidtomain" target="_blank" rel="noopener noreferrer" className="bg-black dark:bg-white text-white dark:text-black text-[10px] font-bold px-3 py-1.5 rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors tracking-widest uppercase">
-                            Subscribe
-                        </a>
-                    </div>
-                </div>
 
-                {/* Video Player */}
-                <div className="relative pt-[56.25%] bg-black">
-                    {video.link ? (
-                        <iframe
-                            className="absolute inset-0 w-full h-full"
-                            src={`https://www.youtube.com/embed/${video.link.split('v=')[1]}?autoplay=1&mute=1&controls=1&rel=0`}
-                            title={video.title}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                        ></iframe>
-                    ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-gray-400">Loading Video...</div>
-                    )}
-                </div>
+                        {/* Right: Channel Branding & Action */}
+                        <div className="flex items-center justify-between md:justify-end gap-5 pt-4 md:pt-0 border-t md:border-t-0 border-gray-100 dark:border-white/5 md:border-none">
+                            <a href="https://www.youtube.com/@voidtomain" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group/channel">
+                                <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 p-[1px]">
+                                    <div className="w-full h-full rounded-full bg-white dark:bg-black flex items-center justify-center text-black dark:text-white font-bold text-sm">V</div>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-bold text-gray-900 dark:text-white group-hover/channel:text-purple-600 dark:group-hover/channel:text-purple-400 transition-colors">Void to Main</span>
+                                    <span className="text-[10px] text-gray-500 tracking-widest uppercase">@voidtomain</span>
+                                </div>
+                            </a>
 
-                {/* Footer */}
-                <div className="bg-gray-50 dark:bg-[#0f0f0f] px-6 py-4 border-t border-gray-200 dark:border-transparent transition-colors duration-300">
-                    <h3 className="text-black dark:text-white text-base font-medium mb-2 line-clamp-1 tracking-wide">{video.title}</h3>
-                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 tracking-wider">
-                        <span>{video.date} • {video.views !== "Featured Video" ? video.views : "Latest Upload"}</span>
+                            <a href="https://www.youtube.com/@voidtomain" target="_blank" rel="noopener noreferrer"
+                                className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 px-5 py-2 rounded-full text-xs font-bold tracking-widest uppercase transition-colors shrink-0">
+                                Subscribe
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
