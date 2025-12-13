@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 
 const Hero = () => {
     const { scrollY } = useScroll();
     const yText = useTransform(scrollY, [0, 500], [0, 150]);
 
     const containerRef = useRef(null);
+    const isInView = useInView(containerRef);
     const canvasRef = useRef(null);
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
     const mouseRef = useRef({ x: 0, y: 0, isActive: false });
@@ -159,21 +160,37 @@ const Hero = () => {
 
     useEffect(() => {
         if (!dimensions.width || !dimensions.height) return;
+        if (!isInView) return;
 
         const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        canvas.width = dimensions.width;
-        canvas.height = dimensions.height;
+        const ctx = canvas.getContext('2d', { alpha: true }); // optimize for alpha
 
-        // 1. PARTICLES 
-        const particleCount = 4000;
+        // 1. RESOLUTION CAP (Performance Win)
+        // We limit the internal resolution to 1080p max to avoid 4k/8k rendering cost
+        // CSS will handle the scaling to full screen
+        const maxRes = 1920;
+        const scale = Math.min(1, maxRes / dimensions.width);
+
+        const internalWidth = Math.floor(dimensions.width * scale);
+        const internalHeight = Math.floor(dimensions.height * scale);
+
+        canvas.width = internalWidth;
+        canvas.height = internalHeight;
+
+        // 2. LOGIC SCALING
+        // Since we are rendering at a potentially lower resolution, we need to scale our logic coordinates
+        const toInternal = (val) => val * scale;
+        // const fromInternal = (val) => val / scale;
+
+        // 3. PARTICLES 
+        const particleCount = 1500; // Reduced to sweet spot
         const particles = [];
 
-        const cx = dimensions.width / 2;
-        const cy = dimensions.height / 2;
+        const cx = internalWidth / 2;
+        const cy = internalHeight / 2;
 
         const isMobile = dimensions.width < 768;
-        const ringRadius = isMobile ? 150 : 300;
+        const ringRadius = toInternal(isMobile ? 150 : 300);
         const exclusionRadius = ringRadius - 20;
 
         for (let i = 0; i < particleCount; i++) {
@@ -194,8 +211,8 @@ const Hero = () => {
                 startX = ringTarget.x + (Math.random() - 0.5) * 20;
                 startY = ringTarget.y + (Math.random() - 0.5) * 20;
             } else {
-                startX = Math.random() * dimensions.width;
-                startY = Math.random() * dimensions.height;
+                startX = Math.random() * internalWidth;
+                startY = Math.random() * internalHeight;
                 const dx = startX - cx;
                 const dy = startY - cy;
                 const dist = Math.sqrt(dx * dx + dy * dy);
@@ -214,41 +231,48 @@ const Hero = () => {
                 vy: (Math.random() - 0.5) * 1.5,
                 ringTarget: ringTarget,
                 size: Math.random() * 1.5 + 0.5,
-                isRing: !!ringTarget
+                isRing: !!ringTarget,
+                // Assign a "type" for batch rendering
+                type: 0 // 0 = bg, 1 = ring-idle, 2 = ring-active
             });
         }
 
         const animate = () => {
-            ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+            ctx.clearRect(0, 0, internalWidth, internalHeight);
 
             const isActive = mouseRef.current.isActive;
+            const mouseX = mouseRef.current.x * scale;
+            const mouseY = mouseRef.current.y * scale;
 
-            // THEME DETECTION
+            // THEME STRINGS
             const isDark = document.documentElement.classList.contains('dark');
             const colorBg = isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.6)";
             const colorRingIdle = isDark ? "rgba(255, 255, 255, 0.6)" : "rgba(0, 0, 0, 0.9)";
             const colorActive = "#A855F7"; // Purple
 
-            particles.forEach(p => {
+            // BATCH CONTAINERS
+            const batchBg = [];
+            const batchRingIdle = [];
+            const batchRingActive = [];
+
+            // UPDATE LOOP
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+
                 p.vx += (Math.random() - 0.5) * 0.15;
                 p.vy += (Math.random() - 0.5) * 0.15;
                 p.vx *= 0.96;
                 p.vy *= 0.96;
 
-                let color = colorBg;
+                let currentType = 0; // Default BG
 
                 if (p.isRing && p.ringTarget) {
                     const dx = p.ringTarget.x - p.x;
                     const dy = p.ringTarget.y - p.y;
-
                     p.vx += dx * 0.01;
                     p.vy += dy * 0.01;
 
-                    if (isActive) {
-                        color = colorActive;
-                    } else {
-                        color = colorRingIdle;
-                    }
+                    currentType = isActive ? 2 : 1;
                 }
 
                 if (!p.isRing) {
@@ -267,22 +291,55 @@ const Hero = () => {
                 p.x += p.vx;
                 p.y += p.vy;
 
-                if (p.x < 0) p.x = dimensions.width;
-                if (p.x > dimensions.width) p.x = 0;
-                if (p.y < 0) p.y = dimensions.height;
-                if (p.y > dimensions.height) p.y = 0;
+                if (p.x < 0) p.x = internalWidth;
+                if (p.x > internalWidth) p.x = 0;
+                if (p.y < 0) p.y = internalHeight;
+                if (p.y > internalHeight) p.y = 0;
 
-                ctx.fillStyle = color;
+                // Push to appropriate batch
+                if (currentType === 0) batchBg.push(p);
+                else if (currentType === 1) batchRingIdle.push(p);
+                else batchRingActive.push(p);
+            }
+
+            // RENDER BATCHES (DRAW CALLS: 3)
+
+            // 1. Background Particles
+            ctx.fillStyle = colorBg;
+            ctx.beginPath();
+            for (let i = 0; i < batchBg.length; i++) {
+                const p = batchBg[i];
+                ctx.rect(p.x, p.y, p.size, p.size);
+            }
+            ctx.fill();
+
+            // 2. Ring Idle Particles
+            if (batchRingIdle.length > 0) {
+                ctx.fillStyle = colorRingIdle;
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                for (let i = 0; i < batchRingIdle.length; i++) {
+                    const p = batchRingIdle[i];
+                    ctx.rect(p.x, p.y, p.size, p.size);
+                }
                 ctx.fill();
-            });
+            }
+
+            // 3. Ring Active Particles
+            if (batchRingActive.length > 0) {
+                ctx.fillStyle = colorActive;
+                ctx.beginPath();
+                for (let i = 0; i < batchRingActive.length; i++) {
+                    const p = batchRingActive[i];
+                    ctx.rect(p.x, p.y, p.size, p.size);
+                }
+                ctx.fill();
+            }
 
             requestAnimationFrame(animate);
         };
         const id = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(id);
-    }, [dimensions]);
+    }, [dimensions, isInView]);
 
     return (
         <section className="relative w-full h-[100dvh] flex items-center justify-center overflow-hidden bg-white dark:bg-black transition-colors duration-300">
