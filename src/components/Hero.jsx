@@ -97,8 +97,22 @@ const Hero = () => {
     }, []);
 
     useEffect(() => {
+        // Tracker for width to detect horizontal resizes only on mobile
+        let lastWidth = window.innerWidth;
+
         const updateDimensions = () => {
             if (containerRef.current) {
+                const newWidth = window.innerWidth;
+                const isMobile = newWidth < 768;
+
+                // On Mobile: Ignore vertical-only resizes (Address bar)
+                // If width hasn't changed, it's likely just the toolbar showing/hiding
+                if (isMobile && newWidth === lastWidth && containerRef.current.clientWidth !== 0) {
+                    return;
+                }
+
+                lastWidth = newWidth;
+
                 setDimensions({
                     width: containerRef.current.clientWidth,
                     height: containerRef.current.clientHeight
@@ -271,7 +285,7 @@ const Hero = () => {
     }, [dimensions]);
 
     return (
-        <section className="relative w-full h-screen flex items-center justify-center overflow-hidden bg-white dark:bg-black transition-colors duration-300">
+        <section className="relative w-full h-[100dvh] flex items-center justify-center overflow-hidden bg-white dark:bg-black transition-colors duration-300">
             <div ref={containerRef} className="absolute inset-0 w-full h-full z-0">
                 <canvas ref={canvasRef} className="block" />
             </div>
