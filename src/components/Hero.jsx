@@ -376,7 +376,7 @@ const Hero = () => {
     }, [dimensions, isInView]);
 
     return (
-        <section ref={containerRef} className="relative w-full h-[100dvh] flex items-center justify-center overflow-hidden bg-white dark:bg-black transition-colors duration-300">
+        <section ref={containerRef} className="relative w-full h-[100svh] flex items-center justify-center overflow-hidden bg-white dark:bg-black transition-colors duration-300">
             <div className="absolute inset-0 w-full h-full z-0">
                 <canvas ref={canvasRef} className="block" />
             </div>
