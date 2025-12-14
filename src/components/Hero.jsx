@@ -51,23 +51,6 @@ const Hero = () => {
                         // temp difficulty while we fetch real one
                         difficulty: "Medium"
                     }));
-
-                    // 4. Fetch Question Details for Difficulty (Optional but nice)
-                    // Unfortunately alfa-leetcode-api might not have a direct lightweight 'difficulty' on submission
-                    // We will try to fetch the question details
-                    try {
-                        // Note: fetching individual question detail relies on another endpoint
-                        // If this creates too much lag we can skip it or optimize
-                        // For now let's try a direct problem fetch if available, or just heuristic
-                        // Actually, let's just leave it as is or try one quick fetch
-                        // Endpoint: /select?titleSlug=two-sum
-                        // OR /dailyQuestion usually has it.
-                        // Let's assume we might not get difficulty easily without another call. 
-                        // I'll make a best effort separate call.
-                        // UNCOMMENT IF DESIRED, but for speed let's check one specific endpoint
-                    } catch (e) {
-                        console.error("Failed to fetch difficulty", e);
-                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch LeetCode data", error);
@@ -132,8 +115,6 @@ const Hero = () => {
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
 
-            const cx = rect.width / 2;
-            const cy = rect.height / 2;
             // Removed distance check - always active if mouse is moving in container
             mouseRef.current = { x, y, isActive: true };
         };
@@ -190,7 +171,6 @@ const Hero = () => {
         const isMobile = dimensions.width < 768;
         // Reduced size as requested
         const ringRadius = toInternal(isMobile ? 110 : 220);
-        const exclusionRadius = ringRadius - 20;
 
         // BLACK HOLE STATE (Internal Physics)
         // We use a ref so it persists across renders without triggering re-renders
@@ -297,8 +277,14 @@ const Hero = () => {
                 let currentType = 0; // Default BG
 
                 if (p.isRing) {
+                    // 2D PROJECTION (FLAT)
+                    const tilt = 1.0; // PURE CIRCLE
+
+                    p.currentSize = p.size; // NO DEPTH SCALE
+
+                    // Target positions (Circular)
                     const targetX = bhX + Math.cos(p.relativeAngle) * p.relativeDist;
-                    const targetY = bhY + Math.sin(p.relativeAngle) * p.relativeDist;
+                    const targetY = bhY + Math.sin(p.relativeAngle) * p.relativeDist * tilt;
 
                     const dx = targetX - p.x;
                     const dy = targetY - p.y;
@@ -309,6 +295,8 @@ const Hero = () => {
                     p.vy *= 0.80;
 
                     currentType = isActive ? 2 : 1;
+                } else {
+                    p.currentSize = p.size; // Background stars don't scale
                 }
 
                 p.x += p.vx;
@@ -340,8 +328,6 @@ const Hero = () => {
                 const dist = Math.sqrt(distSq);
 
                 // SINGULARITY CHECK:
-                // If a star is too close to the dead center, light cannot escape (or math blows up).
-                // We simply don't render it. This fixes the "dots in the middle" artifact.
                 if (dist < 20) continue;
 
                 let lx = p.x;
@@ -363,7 +349,9 @@ const Hero = () => {
                 ctx.beginPath();
                 for (let i = 0; i < batchRingIdle.length; i++) {
                     const p = batchRingIdle[i];
-                    ctx.rect(p.x, p.y, p.size, p.size);
+                    // USE CURRENT SIZE FOR 3D EFFECT
+                    const s = p.currentSize || p.size;
+                    ctx.rect(p.x, p.y, s, s);
                 }
                 ctx.fill();
             }
@@ -374,7 +362,9 @@ const Hero = () => {
                 ctx.beginPath();
                 for (let i = 0; i < batchRingActive.length; i++) {
                     const p = batchRingActive[i];
-                    ctx.rect(p.x, p.y, p.size, p.size);
+                    // USE CURRENT SIZE FOR 3D EFFECT
+                    const s = p.currentSize || p.size;
+                    ctx.rect(p.x, p.y, s, s);
                 }
                 ctx.fill();
             }
