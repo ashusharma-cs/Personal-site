@@ -385,7 +385,7 @@ const Hero = () => {
             <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white dark:from-black to-transparent pointer-events-none z-1"></div>
 
             <div className="relative z-10 container mx-auto px-6 md:px-12 pointer-events-none">
-                <motion.div style={{ y: yText }} className="max-w-4xl pointer-events-auto">
+                <motion.div style={{ y: dimensions.width < 768 ? 0 : yText }} className="max-w-4xl pointer-events-auto">
                     <motion.p
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
