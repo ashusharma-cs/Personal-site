@@ -11,9 +11,9 @@ const Footer = () => {
                 <a href="mailto:ashusharma20@gmail.com" className="hover:text-black dark:hover:text-purple-500 hover:-translate-y-1 transition-all"><FiMail size={20} /></a>
             </div>
             <p className="font-mono text-xs">
-                <a href="https://github.com/bchiang7/v4" target="_blank" rel="noreferrer" className="hover:text-black dark:hover:text-purple-500 transition-colors">
+                <p className="hover:text-black dark:hover:text-purple-500 transition-colors">
                     © {new Date().getFullYear()} Ashu Sharma. All rights reserved.
-                </a>
+                </p>
             </p>
         </footer>
     );
